@@ -1153,8 +1153,8 @@
    "Duration": "Instant",
    "Range": "",
    "Cost": "5 or more Focus",
-   "Effect": "The character makes a close attack with an edge. For this attack, add +1 to the character's Melee damage",
-   "Cheat Sheet": "Focused Fury\nThe character channels their rage into a devastating blow.\nPower Set: Melee Weapons\nAction: Standard\nDuration: Instant\nCost: 5 or more Focus\nEffect: The character makes a close attack with an edge. For this attack, add +1 to the character's Melee damage"
+   "Effect": "The character makes a close attack with an edge. For this attack, add +1 to the character’s Melee damage bonus for every 2 points of Focus they spend. On a success, an affected target takes that total damage. On a Fantastic success, an affected target takes double that total damage and suffers the weapon’s special effect.",
+   "Cheat Sheet": "Focused Fury\nThe character channels their rage into a devastating blow.\nPower Set: Melee Weapons\nAction: Standard\nDuration: Instant\nCost: 5 or more Focus\nEffect: The character makes a close attack with an edge. For this attack, add +1 to the character’s Melee damage bonus for every 2 points of Focus they spend. On a success, an affected target takes that total damage. On a Fantastic success, an affected target takes double that total damage and suffers the weapon’s special effect."
  },
  {
    "Name": "Focused Strike",
@@ -1181,19 +1181,6 @@
    "Cost": "10 or more Focus",
    "Effect": "The character splits their attack to make two close attacks against separate targets within reach (or they can focus a single attack on a single target). Make a single Melee check and compare it to the targets' Melee defenses. For these attacks, add +1 to the character's Melee damage bonus for every 2 points of Focus they spend. On a success, an affected target takes half that total damage. On a Fantastic success, an affected target takes full damage and suffers the weapon's special effect.",
    "Cheat Sheet": "Furious Attacks\nThe character's weapons smash into the foe.\nPower Set: Melee Weapons\nAction: Standard\nDuration: Instant\nCost: 10 or more Focus\nEffect: The character splits their attack to make two close attacks against separate targets within reach (or they can focus a single attack on a single target). Make a single Melee check and compare it to the targets' Melee defenses. For these attacks, add +1 to the character's Melee damage bonus for every 2 points of Focus they spend. On a success, an affected target takes half that total damage. On a Fantastic success, an affected target takes full damage and suffers the weapon's special effect."
- },
- {
-   "Name": "Focused Fury",
-   "Text": "The character channels their rage into a devastating blow.",
-   "Power Set": "Melee Weapons",
-   "Prerequisites": "Exploit, Rank 3",
-   "Action": "Standard",
-   "Trigger": "",
-   "Duration": "Instant",
-   "Range": "",
-   "Cost": "5 or more Focus",
-   "Effect": "The character makes a close attack with an edge. For this attack, add +1 to the character’s Melee damage bonus for every 2 points of Focus they spend. On a success, an affected target takes that total damage. On a Fantastic success, an affected target takes double that total damage and suffers the weapon’s special effect.",
-   "Cheat Sheet": "Focused Fury\nThe character channels their rage into a devastating blow.\nPower Set: Melee Weapons\nAction: Standard\nDuration: Instant\nCost: 5 or more Focus\nEffect: The character makes a close attack with an edge. For this attack, add +1 to the character’s Melee damage bonus for every 2 points of Focus they spend. On a success, an affected target takes that total damage. On a Fantastic success, an affected target takes double that total damage and suffers the weapon’s special effect."
  },
  {
    "Name": "Grappling Technique",

@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Character Powers Reference</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Configure Tailwind for Inter font and some custom colors -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'primary': '#4f46e5',
+                        'secondary': '#10b981',
+                        'accent': '#f59e0b',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Apply smooth scrolling and default font */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        /* Custom scrollbar for better aesthetics */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background-color: #9ca3af;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background-color: #f3f4f6;
+        }
+
+        /* Custom transition for expansion/collapse */
+        .details-transition {
+            transition: max-height 0.4s ease-out, padding 0.4s ease-out, opacity 0.4s ease-out;
+        }
+
+        /* Keyframe for the favorite "pop" animation */
+        @keyframes favorite-pop {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.3); opacity: 0.5; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .animate-pop {
+            animation: favorite-pop 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+
+    <div id="app" class="max-w-4xl mx-auto">
+
+        <!-- Header (Sticky for mobile usability) -->
+        <header class="sticky top-0 z-10 bg-white shadow-lg p-4 rounded-b-xl">
+            <h1 class="text-3xl font-extrabold text-primary mb-3 text-center">Powers Codex</h1>
+            <div class="flex flex-col sm:flex-row gap-3">
+                <!-- Search Input -->
+                <input
+                    type="text"
+                    id="search-input"
+                    placeholder="Search by name, power set, or text..."
+                    class="flex-grow p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-primary focus:border-primary transition duration-150 text-gray-700"
+                    oninput="debounceSearch()"
+                >
+
+                <!-- Filter Dropdown -->
+                <div class="relative">
+                    <button
+                        id="filter-button"
+                        class="w-full sm:w-auto flex-shrink-0 bg-secondary text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:bg-emerald-500 transition duration-150 flex items-center justify-center"
+                        onclick="toggleFilterMenu()"
+                    >
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414A1 1 0 0012 15.586V19h3v-2.586a1 1 0 00-.293-.707l-6.414-6.414A1 1 0 005.414 7H4a1 1 0 01-1-1V4z"></path></svg>
+                        Filter by Set
+                    </button>
+                    <!-- Filter Menu -->
+                    <div id="filter-menu" class="absolute right-0 mt-2 w-56 rounded-lg shadow-xl bg-white ring-1 ring-black ring-opacity-5 hidden z-20">
+                        <!-- All button is always present -->
+                        <button class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onclick="applyFilter('')">All Sets</button>
+                        <div id="power-set-options" class="max-h-60 overflow-y-auto">
+                            <!-- Options populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <p id="results-count" class="mt-2 text-sm text-gray-500 text-center"></p>
+        </header>
+
+        <!-- Main Content Area -->
+        <main id="powers-container" class="p-4 grid grid-cols-1 gap-4">
+            <!-- Power cards will be dynamically injected here -->
+            <div id="loading-indicator" class="text-center p-8 text-gray-500 text-lg">Loading data...</div>
+            <div id="no-results" class="text-center p-8 text-red-500 text-xl font-medium hidden">
+                <svg class="w-12 h-12 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                No powers found matching your search or filter.
+            </div>
+        </main>
+
+    </div>
+
+    <script>
+        // Global variable to hold the loaded data
+        let powersData = [];
+
+        // --- Local Storage and Favorites Management ---
+
+        const STORAGE_KEY = 'powers_favorites';
+        let favoritePowerNames = []; // Array of favorited power names
+
+        /**
+         * Loads favorite power names from Local Storage.
+         */
+        const loadFavorites = () => {
+            try {
+                const storedFavorites = localStorage.getItem(STORAGE_KEY);
+                favoritePowerNames = storedFavorites ? JSON.parse(storedFavorites) : [];
+            } catch (e) {
+                console.error("Error loading favorites from Local Storage:", e);
+                favoritePowerNames = []; // Reset on error
+            }
+        };
+
+        /**
+         * Saves the current list of favorite power names to Local Storage.
+         */
+        const saveFavorites = () => {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(favoritePowerNames));
+            } catch (e) {
+                console.error("Error saving favorites to Local Storage:", e);
+            }
+        };
+
+        /**
+         * Toggles the favorite status of a power.
+         * @param {string} powerName The name of the power to toggle.
+         * @param {HTMLElement} buttonElement The star icon button that was clicked.
+         */
+        window.toggleFavorite = (powerName, buttonElement) => {
+            const powerIndex = powersData.findIndex(p => p.Name === powerName);
+            
+            if (powerIndex === -1) return;
+
+            const power = powersData[powerIndex];
+            
+            if (power.isFavorite) {
+                power.isFavorite = false;
+                favoritePowerNames = favoritePowerNames.filter(name => name !== powerName);
+            } else {
+                power.isFavorite = true;
+                if (!favoritePowerNames.includes(powerName)) {
+                    favoritePowerNames.push(powerName);
+                }
+            }
+
+            // Apply pop animation
+            buttonElement.classList.add('animate-pop');
+            setTimeout(() => {
+                buttonElement.classList.remove('animate-pop');
+            }, 300);
+
+            saveFavorites();
+            searchPowers(); // Re-render to show new sort order/icon state
+        };
+
+        // --- Toggle Details Functionality ---
+
+        /**
+         * Toggles the visibility of a power card's details.
+         * @param {HTMLElement} cardElement The main power card div.
+         */
+        window.toggleDetails = (cardElement) => {
+            const detailsElement = cardElement.querySelector('[data-details]');
+            const chevronElement = cardElement.querySelector('[data-chevron]');
+            
+            // Check if the card is currently expanded
+            const isExpanded = cardElement.classList.contains('is-expanded');
+
+            if (isExpanded) {
+                // Collapse
+                detailsElement.style.maxHeight = '0';
+                detailsElement.style.paddingTop = '0';
+                detailsElement.style.paddingBottom = '0';
+                detailsElement.style.opacity = '0';
+                cardElement.classList.remove('is-expanded');
+                chevronElement.classList.remove('rotate-180');
+            } else {
+                // Expand
+                // Temporarily set max-height to scrollHeight for the animation
+                detailsElement.style.maxHeight = detailsElement.scrollHeight + 'px';
+                detailsElement.style.paddingTop = '0.75rem'; // Re-apply p-3, which is 0.75rem
+                detailsElement.style.paddingBottom = '1rem'; // Re-apply p-4, which is 1rem
+                detailsElement.style.opacity = '1';
+                cardElement.classList.add('is-expanded');
+                chevronElement.classList.add('rotate-180');
+
+                // After transition, set max-height to a safe value to allow content changes
+                // This is a common pattern for smooth expand animations with dynamic content
+                setTimeout(() => {
+                    if (cardElement.classList.contains('is-expanded')) {
+                        detailsElement.style.maxHeight = '1000px'; // Arbitrarily large value
+                    }
+                }, 400); 
+
+            }
+        };
+
+
+        // --- Data Enhancement ---
+
+        /**
+         * Adds the 'isFavorite' property to the powers data based on stored favorites.
+         */
+        const enhanceDataWithFavorites = () => {
+            powersData.forEach(power => {
+                power.isFavorite = favoritePowerNames.includes(power.Name);
+                // Also add an 'isExpanded' state for rendering
+                power.isExpanded = false;
+            });
+        };
+        
+        // --- Core Application Logic ---
+        
+        let currentFilter = '';
+        let debounceTimer;
+
+        const powersContainer = document.getElementById('powers-container');
+        const resultsCountElement = document.getElementById('results-count');
+        const loadingIndicator = document.getElementById('loading-indicator');
+        const noResults = document.getElementById('no-results');
+
+        // Helper function to format a data field for display
+        const formatField = (label, value) => {
+            if (value && value.trim() !== "" && value.trim() !== "None") {
+                return `
+                    <p class="text-sm">
+                        <span class="font-semibold text-gray-600">${label}:</span> 
+                        <span class="text-gray-700">${value}</span>
+                    </p>
+                `;
+            }
+            return '';
+        };
+
+        // Renders the list of powers based on filtering/search results
+        const renderPowers = (filteredPowers) => {
+            powersContainer.innerHTML = '';
+            loadingIndicator.classList.add('hidden');
+            
+            resultsCountElement.textContent = `Displaying ${filteredPowers.length} of ${powersData.length} total powers.`;
+
+            if (filteredPowers.length === 0) {
+                noResults.classList.remove('hidden');
+                return;
+            } else {
+                noResults.classList.add('hidden');
+            }
+            
+            // Apply sorting: Favorites first, then alphabetical by name
+            filteredPowers.sort((a, b) => {
+                // Favorites always come before non-favorites
+                if (a.isFavorite && !b.isFavorite) return -1;
+                if (!a.isFavorite && b.isFavorite) return 1;
+                
+                // If both are same favorite status, sort alphabetically
+                return a.Name.localeCompare(b.Name);
+            });
+
+            const html = filteredPowers.map(power => {
+                const text = power["Text"] || 'No description available.';
+                const effect = power["Effect"] || 'No effect defined.';
+                const favoriteClass = power.isFavorite ? 'text-yellow-500 fill-current' : 'text-gray-400 hover:text-yellow-500';
+
+                return `
+                    <div 
+                        class="power-card bg-white p-4 rounded-xl shadow-md border-t-4 ${power.isFavorite ? 'border-accent' : 'border-primary'} hover:shadow-lg transition duration-200 relative cursor-pointer"
+                        onclick="if (!event.target.closest('button')) toggleDetails(this)"
+                        id="power-${power.Name.replace(/\s/g, '-')}"
+                        data-name="${power.Name}"
+                    >
+                        <!-- Top Row: Title, Icon, and Favorite Button -->
+                        <div class="flex justify-between items-center pr-10">
+                            <!-- Title and Set Tag -->
+                            <div>
+                                <h2 class="text-xl font-bold text-primary">${power["Name"]}</h2>
+                                ${formatField('Power Set', power["Power Set"])}
+                            </div>
+                            
+                            <!-- Chevron Icon (Rotates on expand) -->
+                            <svg data-chevron class="w-6 h-6 text-primary transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </div>
+
+                        <!-- Favorite Button (Absolute Position) -->
+                        <button 
+                            class="absolute top-4 right-4 p-1 rounded-full bg-white transition duration-150 transform hover:scale-110 focus:outline-none"
+                            onclick="toggleFavorite('${power.Name.replace(/'/g, "\\'")}', this)"
+                            aria-label="Toggle Favorite"
+                        >
+                            <svg class="w-6 h-6 ${favoriteClass}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M11.049 2.927c.452-.922 1.62-.922 2.072 0l1.988 4.026a1.5 1.5 0 001.12.827l4.444.646c.995.145 1.393 1.353.67 2.056l-3.216 3.132a1.5 1.5 0 00-.43 1.336l.758 4.425c.17.99-.87 1.745-1.76.993l-3.97-2.088a1.5 1.5 0 00-1.39 0l-3.97 2.088c-.89.467-1.93-.25-1.76-.993l.758-4.425a1.5 1.5 0 00-.43-1.336L2.4 10.533c-.723-.703-.325-1.911.67-2.056l4.444-.646a1.5 1.5 0 001.12-.827l1.988-4.026z" />
+                            </svg>
+                        </button>
+
+                        <!-- Collapsible Details Section -->
+                        <div data-details class="details-transition max-h-0 overflow-hidden opacity-0 pt-0 pb-0">
+                            <hr class="my-3 border-gray-200">
+                            
+                            <!-- Description -->
+                            <div class="bg-indigo-50/50 p-3 rounded-lg text-gray-800 text-sm mb-3 border-l-4 border-accent">
+                                <span class="font-medium">Description:</span> ${text}
+                            </div>
+                            
+                            <!-- Core Attributes -->
+                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs mb-3">
+                                ${formatField('Action', power["Action"])}
+                                ${formatField('Trigger', power["Trigger"])}
+                                ${formatField('Duration', power["Duration"])}
+                                ${formatField('Range', power["Range"])}
+                                ${formatField('Cost', power["Cost"])}
+                                ${formatField('Prerequisites', power["Prerequisites"])}
+                            </div>
+
+                            <!-- Effect (Highlighted) -->
+                            <div class="pt-3 border-t border-gray-200">
+                                <p class="text-sm">
+                                    <span class="font-extrabold text-red-600 uppercase">Effect:</span> 
+                                    <span class="text-gray-700">${effect}</span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            powersContainer.innerHTML = html;
+        };
+
+        // --- Data Loading and Initialization ---
+
+        /**
+         * Loads the powers data from the external JSON file.
+         * @returns {Promise<Array>} A promise that resolves with the power data array.
+         */
+        const loadPowersData = async () => {
+            try {
+                // Assuming the JSON file is named powers.json and is in the same directory
+                const response = await fetch('powers.json');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return await response.json();
+            } catch (error) {
+                console.error("Could not load powers.json. Check the file path and ensure it's accessible.", error);
+                // Optionally display an error message to the user here
+                powersContainer.innerHTML = `<div class="p-4 text-center text-lg text-red-600 bg-red-100 rounded-lg shadow-inner">
+                    Error loading powers data. Please ensure 'powers.json' is in the same folder.
+                </div>`;
+                return []; // Return an empty array on failure
+            }
+        };
+
+        // --- Search and Filter Logic (Unchanged from previous version) ---
+
+        const getUniquePowerSets = () => {
+            // Check if powersData is initialized before mapping
+            if (powersData.length === 0) return [];
+            const sets = new Set(powersData.map(p => p["Power Set"]).filter(set => set && set.trim() !== ''));
+            return Array.from(sets).sort();
+        };
+
+        const populateFilterOptions = () => {
+            const optionsContainer = document.getElementById('power-set-options');
+            const uniqueSets = getUniquePowerSets();
+            
+            optionsContainer.innerHTML = uniqueSets.map(set => `
+                <button 
+                    class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 truncate" 
+                    onclick="applyFilter('${set.replace(/'/g, "\\'")}')"
+                >
+                    ${set}
+                </button>
+            `).join('');
+        };
+
+        const toggleFilterMenu = () => {
+            document.getElementById('filter-menu').classList.toggle('hidden');
+        };
+
+        window.onclick = function(event) {
+            const filterMenu = document.getElementById('filter-menu');
+            const filterButton = document.getElementById('filter-button');
+            if (filterMenu && filterButton) {
+                if (!filterButton.contains(event.target) && !filterMenu.contains(event.target)) {
+                    filterMenu.classList.add('hidden');
+                }
+            }
+        };
+
+        const applyFilter = (filterValue) => {
+            currentFilter = filterValue;
+            document.getElementById('search-input').value = ''; // Clear search on filter change
+            toggleFilterMenu();
+            searchPowers();
+        };
+
+        const searchPowers = () => {
+            const searchTerm = document.getElementById('search-input').value.toLowerCase().trim();
+            
+            let results = powersData;
+
+            // 1. Apply Power Set Filter
+            if (currentFilter) {
+                results = results.filter(power => power["Power Set"] === currentFilter);
+            }
+
+            // 2. Apply Search Term
+            if (searchTerm) {
+                results = results.filter(power => 
+                    power["Name"].toLowerCase().includes(searchTerm) ||
+                    (power["Power Set"] && power["Power Set"].toLowerCase().includes(searchTerm)) ||
+                    (power["Text"] && power["Text"].toLowerCase().includes(searchTerm)) ||
+                    (power["Effect"] && power["Effect"].toLowerCase().includes(searchTerm))
+                );
+            }
+            
+            renderPowers(results);
+        };
+
+        // Debounce function to prevent excessive calls while typing
+        const debounceSearch = () => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(searchPowers, 300);
+        };
+
+        // --- Main App Setup ---
+
+        window.onload = async function() {
+            // 1. Load the data
+            powersData = await loadPowersData();
+
+            // Only proceed if data was successfully loaded
+            if (powersData.length > 0) {
+                // 2. Load favorites from storage
+                loadFavorites();
+                
+                // 3. Enhance data with favorite status
+                enhanceDataWithFavorites();
+                
+                // 4. Populate filter options
+                populateFilterOptions();
+                
+                // 5. Initial render
+                searchPowers(); 
+            } else {
+                 // Hide loading indicator if data load failed
+                loadingIndicator.classList.add('hidden');
+            }
+        };
+
+    </script>
+</body>
+</html>
